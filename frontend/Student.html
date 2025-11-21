@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <title>Campus Food Hub - Student Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+    }
+    html, body {
+      height: 100%;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f5f5f5;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #9333ea;
+      border-radius: 3px;
+    }
+    .star {
+      cursor: pointer;
+      transition: transform 150ms ease;
+    }
+    .star:hover {
+      transform: scale(1.15);
+    }
+    .star.active {
+      color: #fbbf24;
+    }
+    .modal-backdrop {
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+    }
+    .focus-outline:focus-visible {
+      outline: 2px solid #9333ea;
+      outline-offset: 2px;
+    }
+    .restaurant-card {
+      transition: all 300ms ease;
+      cursor: pointer;
+    }
+    .restaurant-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(147, 51, 234, 0.2);
+    }
+    .restaurant-card:hover .food-image {
+      transform: scale(1.05);
+    }
+    .food-image {
+      transition: transform 400ms ease;
+      overflow: hidden;
+    }
+    .fade-in {
+      animation: fadeIn 0.4s ease-out forwards;
+      opacity: 0;
+    }
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+    .slide-up {
+      animation: slideUp 0.3s ease-out;
+    }
+    @keyframes slideUp {
+      0% { transform: translateY(8px); opacity: 0; }
+      100% { transform: translateY(0); opacity: 1; }
+    }
+    .smooth-transition {
+      transition: all 250ms ease;
+    }
+    .pulse-badge {
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .offer-badge {
+      background: linear-gradient(135deg, #9333ea 0%, #c084fc 100%);
+    }
+    .quick-filter {
+      transition: all 200ms ease;
+    }
+    .quick-filter:hover {
+      transform: translateY(-2px);
+    }
+    .quick-filter.active {
+      background: #9333ea;
+      color: white;
+      border-color: #9333ea;
+    }
+    .offers-filter {
+      background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
+      color: white;
+      border-color: #ff6b6b;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+    }
+    .offers-filter:hover {
+      box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
+      transform: translateY(-3px);
+    }
+    .offers-filter.active {
+      background: linear-gradient(135deg, #ff5252 0%, #ff7043 100%);
+      border-color: #ff5252;
+    }
+    .rating-badge {
+      background: #48c479;
+    }
+    .payment-option:has(input:checked) {
+      border-color: #9333ea;
+      background: #f3e8ff;
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+ </head>
+ <body class="h-full bg-purple-50 text-gray-900 antialiased">
+  <header class="w-full bg-white border-b border-purple-200 shadow-sm sticky top-0 z-10">
+   <nav class="max-w-7xl mx-auto flex items-center justify-between px-6 py-3">
+    <div class="flex items-center gap-6"><button type="button" id="logoBtn" class="flex items-center gap-2 focus-outline rounded-lg hover:opacity-80 smooth-transition">
+      <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center text-2xl shadow-md">
+       🍔
+      </div><h1 id="appTitle" class="text-2xl font-bold text-purple-900">Campus Food Hub</h1></button>
+     <div class="hidden md:flex items-center gap-1 bg-purple-100 rounded-lg px-3 py-2"><span class="text-sm text-purple-600">📍</span> <span class="text-sm font-medium text-purple-700">Campus Area</span>
+     </div>
+    </div>
+    <div class="flex items-center gap-4"><button type="button" data-section="cart" class="cart-header-btn relative focus-outline flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-purple-100 smooth-transition"> <span class="text-xl">🛒</span> <span class="text-sm font-medium text-purple-700">Cart</span> <span id="cartCountHeader" class="pulse-badge absolute -top-1 -right-1 w-5 h-5 bg-purple-600 text-white text-xs font-bold rounded-full flex items-center justify-center hidden">0</span> </button>
+     <p id="studentName" class="hidden md:block text-sm text-purple-600">Welcome, Student 👋</p><button id="logoutBtn" type="button" class="focus-outline rounded-lg border border-purple-300 bg-white px-4 py-2 text-sm font-medium text-purple-700 hover:bg-purple-100 smooth-transition"> Logout </button>
+    </div>
+   </nav>
+  </header>
+  <main class="h-full overflow-y-auto">
+   <div id="statusBar" class="hidden fixed top-20 right-6 z-50 rounded-lg border border-green-200 bg-white px-4 py-3 text-sm font-medium text-gray-800 shadow-xl slide-up"></div>
+   <section class="max-w-7xl mx-auto px-6 py-6"><!-- Quick Filters -->
+    <div class="mb-6">
+     <div class="flex items-center gap-3 overflow-x-auto pb-2 custom-scrollbar"><button type="button" class="quick-filter active whitespace-nowrap px-4 py-2 rounded-full border border-purple-300 bg-white text-sm font-medium text-purple-700 shadow-sm" data-quick-filter=""> All </button> <button type="button" class="quick-filter whitespace-nowrap px-4 py-2 rounded-full border border-purple-300 bg-white text-sm font-medium text-purple-700 shadow-sm" data-quick-filter="Meals"> 🍽️ Meals </button> <button type="button" class="quick-filter whitespace-nowrap px-4 py-2 rounded-full border border-purple-300 bg-white text-sm font-medium text-purple-700 shadow-sm" data-quick-filter="Snacks"> 🍟 Snacks </button> <button type="button" class="quick-filter whitespace-nowrap px-4 py-2 rounded-full border border-purple-300 bg-white text-sm font-medium text-purple-700 shadow-sm" data-quick-filter="Beverages"> ☕ Beverages </button> <button type="button" class="quick-filter whitespace-nowrap px-4 py-2 rounded-full border border-purple-300 bg-white text-sm font-medium text-purple-700 shadow-sm" data-quick-filter="Desserts"> 🍨 Desserts </button> <button type="button" class="quick-filter offers-filter whitespace-nowrap px-4 py-2 rounded-full border text-sm font-medium shadow-sm" data-quick-filter="offers"> 🎁 Hot Offers </button>
+     </div>
+    </div><!-- Tab Navigation -->
+    <div class="mb-6 border-b border-purple-200">
+     <div class="flex gap-6"><button type="button" data-section="browse" class="tab-btn pb-3 text-sm font-semibold text-purple-600 border-b-2 border-purple-600"> Browse Menu </button> <button type="button" data-section="orders" class="tab-btn pb-3 text-sm font-medium text-purple-600 hover:text-purple-900 smooth-transition"> My Orders </button> <button type="button" data-section="reviews" class="tab-btn pb-3 text-sm font-medium text-purple-600 hover:text-purple-900 smooth-transition"> My Reviews </button>
+     </div>
+    </div><!-- Browse Section -->
+    <section id="section-browse" class="content-section">
+     <form id="searchForm" class="mb-6" aria-label="Browse filters">
+      <div class="relative"><label for="searchFood" class="sr-only">Search food</label> <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-purple-400 text-lg">🔍</span> <input id="searchFood" name="searchFood" type="text" class="w-full rounded-lg border border-purple-300 bg-white pl-12 pr-4 py-3 text-sm text-purple-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="Search for restaurants, cuisines, or dishes...">
+      </div>
+     </form>
+     <div class="mb-4">
+      <h2 class="text-xl font-semibold text-purple-900"><span id="resultsCount">6</span> restaurants available</h2>
+     </div>
+     <div id="foodGrid" class="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"><!-- Cards injected via JS -->
+     </div>
+    </section><!-- Orders Section -->
+    <section id="section-orders" class="content-section hidden">
+     <div class="mb-6">
+      <h2 class="text-xl font-semibold text-purple-900">My Orders</h2>
+      <p class="text-sm text-purple-600 mt-1">Track your order history</p>
+     </div>
+     <div id="ordersList" class="flex flex-col gap-4"><!-- Orders injected -->
+     </div>
+    </section><!-- Reviews Section -->
+    <section id="section-reviews" class="content-section hidden">
+     <div class="mb-6">
+      <h2 class="text-xl font-semibold text-purple-900">My Reviews</h2>
+      <p class="text-sm text-purple-600 mt-1">Your feedback helps others</p>
+     </div>
+     <div id="reviewsList" class="flex flex-col gap-4"><!-- Reviews injected -->
+     </div>
+    </section><!-- Cart Section -->
+    <section id="section-cart" class="content-section hidden">
+     <div class="mb-6">
+      <h2 class="text-xl font-semibold text-purple-900">Shopping Cart</h2>
+      <p class="text-sm text-purple-600 mt-1">Review your items before checkout</p>
+     </div>
+     <div id="cartItems" class="flex flex-col gap-4 mb-6"><!-- Cart items injected -->
+     </div>
+     <div class="bg-white rounded-lg border border-purple-200 p-5 mb-6">
+      <h3 class="text-lg font-bold text-purple-900 mb-4">📍 Delivery Address</h3>
+      <form id="addressForm">
+       <div class="mb-4"><label for="deliveryAddress" class="block text-sm font-medium text-purple-700 mb-2">Enter your delivery address</label> <textarea id="deliveryAddress" rows="3" class="w-full rounded-lg border border-purple-300 bg-white px-4 py-3 text-sm text-purple-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Room number, hostel/building name, campus area..."></textarea>
+       </div>
+       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div><label for="contactName" class="block text-sm font-medium text-purple-700 mb-2">Your Name</label> <input id="contactName" type="text" class="w-full rounded-lg border border-purple-300 bg-white px-4 py-2 text-sm text-purple-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Enter your name">
+        </div>
+        <div><label for="contactPhone" class="block text-sm font-medium text-purple-700 mb-2">Phone Number</label> <input id="contactPhone" type="tel" class="w-full rounded-lg border border-purple-300 bg-white px-4 py-2 text-sm text-purple-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Enter your phone number">
+        </div>
+       </div>
+      </form>
+     </div>
+     <div class="bg-white rounded-lg border border-purple-200 p-5 mb-6">
+      <h3 class="text-lg font-bold text-purple-900 mb-4">💳 Payment Method</h3>
+      <div class="space-y-3"><label class="payment-option flex items-center gap-3 p-4 rounded-lg border-2 border-purple-200 cursor-pointer hover:border-purple-400 smooth-transition"> <input type="radio" name="paymentMethod" value="upi" class="w-5 h-5 text-purple-600 focus:ring-2 focus:ring-purple-500" checked>
+        <div class="flex-1">
+         <div class="flex items-center gap-2"><span class="text-2xl">📱</span> <span class="font-semibold text-purple-900">UPI Payment</span>
+         </div>
+         <p class="text-xs text-purple-600 mt-1">Pay using Google Pay, PhonePe, Paytm, etc.</p>
+        </div></label> <label class="payment-option flex items-center gap-3 p-4 rounded-lg border-2 border-purple-200 cursor-pointer hover:border-purple-400 smooth-transition"> <input type="radio" name="paymentMethod" value="cod" class="w-5 h-5 text-purple-600 focus:ring-2 focus:ring-purple-500">
+        <div class="flex-1">
+         <div class="flex items-center gap-2"><span class="text-2xl">💵</span> <span class="font-semibold text-purple-900">Cash on Delivery</span>
+         </div>
+         <p class="text-xs text-purple-600 mt-1">Pay with cash when your order arrives</p>
+        </div></label> <label class="payment-option flex items-center gap-3 p-4 rounded-lg border-2 border-purple-200 cursor-pointer hover:border-purple-400 smooth-transition"> <input type="radio" name="paymentMethod" value="netbanking" class="w-5 h-5 text-purple-600 focus:ring-2 focus:ring-purple-500">
+        <div class="flex-1">
+         <div class="flex items-center gap-2"><span class="text-2xl">🏦</span> <span class="font-semibold text-purple-900">Net Banking</span>
+         </div>
+         <p class="text-xs text-purple-600 mt-1">Pay directly from your bank account</p>
+        </div></label> <label class="payment-option flex items-center gap-3 p-4 rounded-lg border-2 border-purple-200 cursor-pointer hover:border-purple-400 smooth-transition"> <input type="radio" name="paymentMethod" value="card" class="w-5 h-5 text-purple-600 focus:ring-2 focus:ring-purple-500">
+        <div class="flex-1">
+         <div class="flex items-center gap-2"><span class="text-2xl">💳</span> <span class="font-semibold text-purple-900">Credit/Debit Card</span>
+         </div>
+         <p class="text-xs text-purple-600 mt-1">Pay using your credit or debit card</p>
+        </div></label>
+      </div>
+     </div>
+     <div class="sticky bottom-0 bg-white border-t border-purple-200 pt-4 mt-6">
+      <div class="flex items-center justify-between">
+       <div>
+        <p class="text-sm text-purple-600">Total Amount</p>
+        <p class="text-2xl font-bold text-purple-900">₹<span id="cartTotal">0</span></p>
+       </div><button id="placeOrderBtn" type="button" class="focus-outline rounded-lg bg-purple-600 px-8 py-3 text-base font-semibold text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed smooth-transition shadow-md"> Place Order </button>
+      </div>
+     </div>
+    </section>
+   </section>
+  </main><!-- Order Confirmation Modal -->
+  <div id="confirmOrderModal" class="fixed inset-0 z-20 hidden items-center justify-center p-4 modal-backdrop" aria-labelledby="confirmOrderTitle" role="dialog" aria-modal="true">
+   <div class="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl relative"><button id="closeConfirmModalBtn" type="button" class="absolute right-4 top-4 text-purple-400 hover:text-purple-700 focus-outline rounded-full text-xl" aria-label="Close confirmation dialog"> ✕ </button>
+    <h2 id="confirmOrderTitle" class="text-2xl font-bold text-purple-900 mb-4">🛍️ Confirm Your Order</h2>
+    <div class="bg-purple-50 rounded-lg p-4 mb-4">
+     <h3 class="text-sm font-bold text-purple-900 mb-3">Order Summary</h3>
+     <div id="confirmOrderItems" class="space-y-2 mb-3"><!-- Order items will be injected here -->
+     </div>
+     <div class="border-t border-purple-200 pt-3 flex items-center justify-between"><span class="text-base font-bold text-purple-900">Total Amount:</span> <span class="text-xl font-bold text-purple-900">₹<span id="confirmTotal">0</span></span>
+     </div>
+    </div>
+    <div class="bg-purple-50 rounded-lg p-4 mb-4">
+     <h3 class="text-sm font-bold text-purple-900 mb-2">📍 Delivery Address</h3>
+     <div id="confirmAddress" class="text-sm text-purple-700"><!-- Address will be injected here -->
+     </div>
+    </div>
+    <div class="bg-purple-50 rounded-lg p-4 mb-6">
+     <h3 class="text-sm font-bold text-purple-900 mb-2">💳 Payment Method</h3>
+     <div id="confirmPayment" class="text-sm text-purple-700"><!-- Payment method will be injected here -->
+     </div>
+    </div>
+    <div class="flex justify-end gap-3"><button type="button" id="cancelConfirmBtn" class="focus-outline rounded-lg border border-purple-300 px-6 py-3 text-sm font-medium text-purple-700 hover:bg-purple-50 smooth-transition"> Cancel </button> <button type="button" id="confirmPlaceOrderBtn" class="focus-outline rounded-lg bg-purple-600 px-6 py-3 text-sm font-semibold text-white hover:bg-purple-700 smooth-transition shadow-md"> Confirm &amp; Place Order </button>
+    </div>
+   </div>
+  </div><!-- Review Modal -->
+  <div id="reviewModal" class="fixed inset-0 z-20 hidden items-center justify-center p-4 modal-backdrop" aria-labelledby="reviewModalTitle" role="dialog" aria-modal="true">
+   <div class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl relative"><button id="closeReviewModalBtn" type="button" class="absolute right-4 top-4 text-purple-400 hover:text-purple-700 focus-outline rounded-full text-xl" aria-label="Close review dialog"> ✕ </button>
+    <h2 id="reviewModalTitle" class="text-xl font-bold text-purple-900 mb-2">Write a Review</h2>
+    <p id="reviewItemName" class="text-sm text-purple-600 mb-4"></p>
+    <div class="mb-4">
+     <p class="text-sm font-medium text-purple-700 mb-2">Your rating</p>
+     <div class="flex items-center gap-1 text-3xl text-purple-300" aria-label="Star rating"><button type="button" class="star focus-outline" data-rating="1" aria-label="1 star">★</button> <button type="button" class="star focus-outline" data-rating="2" aria-label="2 stars">★</button> <button type="button" class="star focus-outline" data-rating="3" aria-label="3 stars">★</button> <button type="button" class="star focus-outline" data-rating="4" aria-label="4 stars">★</button> <button type="button" class="star focus-outline" data-rating="5" aria-label="5 stars">★</button>
+     </div>
+    </div>
+    <div class="mb-6"><label for="reviewText" class="block text-sm font-medium text-purple-700 mb-2">Your review</label> <textarea id="reviewText" rows="4" class="w-full rounded-lg border border-purple-300 bg-white px-4 py-3 text-sm text-purple-900 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Share your experience..."></textarea>
+    </div>
+    <div class="flex justify-end gap-3"><button type="button" id="cancelReviewBtn" class="focus-outline rounded-lg border border-purple-300 px-5 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 smooth-transition"> Cancel </button> <button type="button" id="submitReviewBtn" class="focus-outline rounded-lg bg-purple-600 px-5 py-2 text-sm font-semibold text-white hover:bg-purple-700 smooth-transition"> Submit Review </button>
+    </div>
+   </div>
+  </div>
+  <footer class="w-full border-t border-purple-200 bg-white">
+   <div class="max-w-7xl mx-auto px-6 py-4 text-xs text-purple-600 flex items-center justify-between"><span>🍕 Made with ❤️ for hungry students</span> <span>✨ Demo dashboard · No real orders placed</span>
+   </div>
+  </footer>
+  <script>
+    // -------- Demo Data --------
+    const MENU_ITEMS = [
+      { 
+        id: "1", 
+        name: "Margherita Pizza", 
+        vendor: "Campus Café", 
+        category: "Meals", 
+        price: 180,
+        originalPrice: 220,
+        discount: 18,
+        rating: 4.5,
+        deliveryTime: "25-30 min",
+        description: "Fresh mozzarella, tomato sauce, and basil on a crispy thin crust. A classic Italian favorite!", 
+        emoji: "🍕",
+        hasOffer: true,
+        image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='90' fill='%23FFD93D'/%3E%3Ccircle cx='100' cy='100' r='75' fill='%23FF6B6B'/%3E%3Ccircle cx='70' cy='70' r='12' fill='%23FFF'/%3E%3Ccircle cx='130' cy='80' r='12' fill='%23FFF'/%3E%3Ccircle cx='90' cy='120' r='12' fill='%23FFF'/%3E%3Ccircle cx='120' cy='130' r='12' fill='%23FFF'/%3E%3Cpath d='M 60 90 Q 65 85 70 90' stroke='%234CAF50' stroke-width='3' fill='none'/%3E%3Cpath d='M 110 100 Q 115 95 120 100' stroke='%234CAF50' stroke-width='3' fill='none'/%3E%3C/svg%3E"
+      },
+      { 
+        id: "2", 
+        name: "Veg Burger", 
+        vendor: "Food Court", 
+        category: "Meals", 
+        price: 120,
+        originalPrice: 150,
+        discount: 20,
+        rating: 4.3,
+        deliveryTime: "20-25 min",
+        description: "Juicy veggie patty with lettuce, tomato, onions, and special sauce in a toasted bun.", 
+        emoji: "🍔",
+        hasOffer: true,
+        image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cellipse cx='100' cy='50' rx='70' ry='20' fill='%23D4A574'/%3E%3Crect x='30' y='60' width='140' height='15' fill='%234CAF50' rx='3'/%3E%3Crect x='30' y='75' width='140' height='8' fill='%23FF6B6B' rx='2'/%3E%3Crect x='30' cy='83' width='140' height='25' fill='%238B4513' rx='4'/%3E%3Crect x='30' y='108' width='140' height='8' fill='%23FFD700' rx='2'/%3E%3Crect x='30' y='116' width='140' height='10' fill='%23FF6347' rx='2'/%3E%3Cellipse cx='100' cy='135' rx='75' ry='22' fill='%23F4A460'/%3E%3Cellipse cx='100' cy='133' rx='75' ry='20' fill='%23DEB887'/%3E%3C/svg%3E"
+      },
+      { 
+        id: "3", 
+        name: "French Fries", 
+        vendor: "Campus Café", 
+        category: "Snacks", 
+        price: 70,
+        originalPrice: 70,
+        discount: 0,
+        rating: 4.2,
+        deliveryTime: "15-20 min",
+        description: "Golden crispy fries, perfectly salted. Great as a side or snack!", 
+        emoji: "🍟",
+        hasOffer: false,
+        image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath d='M 60 180 L 70 80 L 85 80 L 75 180 Z' fill='%23FFD93D'/%3E%3Cpath d='M 80 180 L 90 70 L 105 70 L 95 180 Z' fill='%23FFC107'/%3E%3Cpath d='M 100 180 L 110 85 L 125 85 L 115 180 Z' fill='%23FFD93D'/%3E%3Cpath d='M 120 180 L 130 75 L 145 75 L 135 180 Z' fill='%23FFC107'/%3E%3Cpath d='M 50 180 Q 100 185 150 180 L 150 195 Q 100 200 50 195 Z' fill='%23FF6B6B'/%3E%3Ctext x='100' y='205' font-size='24' text-anchor='middle' fill='%23FFF' font-weight='bold'%3EFRIES%3C/text%3E%3C/svg%3E"
+      },
+      { 
+        id: "4", 
+        name: "Cold Coffee", 
+        vendor: "Brew Bar", 
+        category: "Beverages", 
+        price: 90,
+        originalPrice: 110,
+        discount: 18,
+        rating: 4.6,
+        deliveryTime: "10-15 min",
+        description: "Smooth and creamy iced coffee topped with whipped cream. Perfect refreshment!", 
+        emoji: "☕",
+        hasOffer: true,
+        image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect x='60' y='60' width='80' height='110' rx='8' fill='%23D2691E' opacity='0.3'/%3E%3Crect x='65' y='65' width='70' height='100' rx='6' fill='%236F4E37'/%3E%3Cellipse cx='100' cy='65' rx='35' ry='8' fill='%23FFF'/%3E%3Cellipse cx='100' cy='63' rx='35' ry='6' fill='%23F5F5DC'/%3E%3Crect x='95' y='30' width='10' height='35' fill='%23DDD' rx='5'/%3E%3Cpath d='M 70 80 L 75 85 L 70 90 L 75 95 L 70 100' stroke='%23FFF' stroke-width='2' fill='none' opacity='0.3'/%3E%3Ccircle cx='85' cy='120' r='4' fill='%23FFF' opacity='0.4'/%3E%3Ccircle cx='110' cy='130' r='5' fill='%23FFF' opacity='0.4'/%3E%3C/svg%3E"
+      },
+      { 
+        id: "5", 
+        name: "Brownie Sundae", 
+        vendor: "Sweet Spot", 
+        category: "Desserts", 
+        price: 140,
+        originalPrice: 140,
+        discount: 0,
+        rating: 4.7,
+        deliveryTime: "20-25 min",
+        description: "Warm chocolate brownie topped with vanilla ice cream, chocolate sauce, and a cherry!", 
+        emoji: "🍨",
+        hasOffer: false,
+        image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect x='50' y='130' width='100' height='40' rx='5' fill='%234A2511'/%3E%3Cellipse cx='100' cy='110' rx='45' ry='35' fill='%23FFF8DC'/%3E%3Cellipse cx='100' cy='105' rx='45' ry='30' fill='%23FFFACD'/%3E%3Cellipse cx='100' cy='80' rx='35' ry='28' fill='%23FFE4E1'/%3E%3Ccircle cx='100' cy='60' r='8' fill='%23FF0000'/%3E%3Crect x='98' y='60' width='4' height='15' fill='%238B4513'/%3E%3Cpath d='M 70 120 Q 75 115 80 120' stroke='%236F4E37' stroke-width='2' fill='none'/%3E%3Cpath d='M 120 125 Q 125 120 130 125' stroke='%236F4E37' stroke-width='2' fill='none'/%3E%3Ccircle cx='85' cy='95' r='3' fill='%23FF69B4'/%3E%3Ccircle cx='115' cy='100' r='3' fill='%23FF69B4'/%3E%3C/svg%3E"
+      },
+      { 
+        id: "6", 
+        name: "Masala Maggi", 
+        vendor: "Night Canteen", 
+        category: "Snacks", 
+        price: 60,
+        originalPrice: 60,
+        discount: 0,
+        rating: 4.4,
+        deliveryTime: "15-20 min",
+        description: "Spicy instant noodles cooked with vegetables and Indian masala spices. Comfort in a bowl!", 
+        emoji: "🍜",
+        hasOffer: false,
+        image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cellipse cx='100' cy='140' rx='70' ry='25' fill='%23FF6B6B'/%3E%3Cellipse cx='100' cy='135' rx='70' ry='25' fill='%23FF8C8C'/%3E%3Cpath d='M 40 110 Q 50 90 60 110 T 80 110 T 100 110 T 120 110 T 140 110 T 160 110' stroke='%23FFD93D' stroke-width='4' fill='none'/%3E%3Cpath d='M 45 120 Q 55 105 65 120 T 85 120 T 105 120 T 125 120 T 145 120' stroke='%23FFD93D' stroke-width='4' fill='none'/%3E%3Cpath d='M 50 130 Q 60 115 70 130 T 90 130 T 110 130 T 130 130 T 150 130' stroke='%23FFD93D' stroke-width='4' fill='none'/%3E%3Ccircle cx='70' cy='125' r='5' fill='%234CAF50'/%3E%3Ccircle cx='110' cy='120' r='5' fill='%23FF6347'/%3E%3Ccircle cx='130' cy='128' r='5' fill='%234CAF50'/%3E%3Crect x='145' y='100' width='8' height='50' fill='%23D4A574' rx='4'/%3E%3Crect x='145' y='95' width='8' height='10' fill='%23A0826D' rx='4'/%3E%3C/svg%3E"
+      }
+    ];
+
+    // -------- State --------
+    let activeSection = "browse";
+    let activeQuickFilter = "";
+    let cart = [];
+    let orders = [];
+    let reviews = [];
+    let reviewContext = { itemId: null, itemName: "" };
+    let currentRating = 0;
+
+    // -------- Utilities --------
+    function showStatus(message, type = "success") {
+      const bar = document.getElementById("statusBar");
+      bar.textContent = message;
+      bar.classList.remove("hidden", "border-green-200", "border-red-200");
+      if (type === "error") {
+        bar.classList.add("border-red-200");
+      } else {
+        bar.classList.add("border-green-200");
+      }
+      setTimeout(() => {
+        bar.classList.add("hidden");
+      }, 3000);
+    }
+
+    // -------- Navigation --------
+    function setActiveSection(section) {
+      activeSection = section;
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        const sec = btn.getAttribute("data-section");
+        if (sec === section) {
+          btn.classList.remove("text-purple-600", "hover:text-purple-900", "font-medium");
+          btn.classList.add("text-purple-600", "border-b-2", "border-purple-600", "font-semibold");
+        } else {
+          btn.classList.add("text-purple-600", "hover:text-purple-900", "font-medium");
+          btn.classList.remove("border-b-2", "border-purple-600", "font-semibold");
+        }
+      });
+
+      document.querySelectorAll(".content-section").forEach(sec => sec.classList.add("hidden"));
+      const target = document.getElementById("section-" + section);
+      if (target) {
+        target.classList.remove("hidden");
+        target.classList.add("fade-in");
+        setTimeout(() => target.classList.remove("fade-in"), 400);
+      }
+    }
+
+    // -------- Quick Filters --------
+    function handleQuickFilters() {
+      document.querySelectorAll(".quick-filter").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const filter = btn.getAttribute("data-quick-filter") || "";
+          activeQuickFilter = filter;
+          
+          document.querySelectorAll(".quick-filter").forEach(b => {
+            b.classList.remove("active");
+          });
+          btn.classList.add("active");
+          
+          renderMenu();
+        });
+      });
+    }
+
+    // -------- Browse / Filters --------
+    function getFilteredMenu() {
+      const search = document.getElementById("searchFood").value.trim().toLowerCase();
+
+      return MENU_ITEMS.filter(item => {
+        const matchSearch =
+          !search ||
+          item.name.toLowerCase().includes(search) ||
+          item.vendor.toLowerCase().includes(search) ||
+          item.category.toLowerCase().includes(search);
+        
+        let matchFilter = true;
+        if (activeQuickFilter === "offers") {
+          matchFilter = item.hasOffer;
+        } else if (activeQuickFilter) {
+          matchFilter = item.category === activeQuickFilter;
+        }
+        
+        return matchSearch && matchFilter;
+      });
+    }
+
+    function renderMenu() {
+      const grid = document.getElementById("foodGrid");
+      grid.innerHTML = "";
+      const list = getFilteredMenu();
+      
+      document.getElementById("resultsCount").textContent = list.length;
+      
+      if (list.length === 0) {
+        grid.innerHTML = '<div class="col-span-full text-center py-12"><p class="text-4xl mb-3">😢</p><p class="text-lg text-purple-600">No restaurants found</p><p class="text-sm text-purple-500 mt-1">Try adjusting your filters</p></div>';
+        return;
+      }
+      
+      list.forEach((item, index) => {
+        const card = document.createElement("article");
+        card.className = "restaurant-card fade-in bg-white rounded-xl overflow-hidden border border-purple-200 shadow-sm";
+        card.style.animationDelay = `${index * 0.05}s`;
+        
+        const discountBadge = item.hasOffer ? `
+          <div class="absolute top-3 left-3 offer-badge text-white text-xs font-bold px-3 py-1 rounded-lg shadow-md">
+            ${item.discount}% OFF
+          </div>
+        ` : '';
+        
+        card.innerHTML = `
+          <div class="relative h-48 bg-purple-50 overflow-hidden">
+            <img src="${item.image}" alt="${item.name}" class="food-image w-full h-full object-cover" />
+            ${discountBadge}
+          </div>
+          <div class="p-4">
+            <div class="flex items-start justify-between mb-2">
+              <div class="flex-1">
+                <h3 class="text-lg font-bold text-purple-900 mb-1">${item.name}</h3>
+                <p class="text-sm text-purple-600">${item.vendor}</p>
+              </div>
+              <div class="rating-badge flex items-center gap-1 px-2 py-1 rounded-lg text-white text-xs font-semibold">
+                <span>★</span>
+                <span>${item.rating}</span>
+              </div>
+            </div>
+            <p class="text-xs text-purple-700 mb-3 line-clamp-2">${item.description}</p>
+            <div class="flex items-center justify-between text-xs text-purple-600 mb-3">
+              <span>⏱️ ${item.deliveryTime}</span>
+              <span class="px-2 py-1 bg-purple-100 rounded">${item.category}</span>
+            </div>
+            <div class="flex items-center justify-between pt-3 border-t border-purple-200">
+              <div class="flex items-center gap-2">
+                ${item.hasOffer ? `<span class="text-sm text-purple-400 line-through">₹${item.originalPrice}</span>` : ''}
+                <span class="text-xl font-bold text-purple-900">₹${item.price}</span>
+              </div>
+              <button
+                type="button"
+                class="focus-outline rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 smooth-transition shadow-sm"
+                data-add-to-cart="${item.id}"
+              >
+                Add to Cart
+              </button>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function handleBrowseInteractions() {
+      document.getElementById("searchForm").addEventListener("submit", e => e.preventDefault());
+      document.getElementById("searchFood").addEventListener("input", renderMenu);
+
+      document.getElementById("foodGrid").addEventListener("click", e => {
+        const btn = e.target.closest("[data-add-to-cart]");
+        if (!btn) return;
+        const id = btn.getAttribute("data-add-to-cart");
+        const item = MENU_ITEMS.find(i => i.id === id);
+        if (!item) return;
+        addToCart(item);
+      });
+    }
+
+    // -------- Cart --------
+    function addToCart(item) {
+      const existing = cart.find(i => i.id === item.id);
+      if (existing) {
+        existing.quantity += 1;
+      } else {
+        cart.push({ id: item.id, name: item.name, vendor: item.vendor, price: item.price, quantity: 1 });
+      }
+      renderCart();
+      showStatus(`${item.name} added to cart!`);
+    }
+
+    function updateCartCount() {
+      const count = cart.reduce((acc, cur) => acc + cur.quantity, 0);
+      const badge = document.getElementById("cartCountHeader");
+      badge.textContent = count;
+      if (count > 0) {
+        badge.classList.remove("hidden");
+      } else {
+        badge.classList.add("hidden");
+      }
+    }
+
+    function renderCart() {
+      const container = document.getElementById("cartItems");
+      container.innerHTML = "";
+      if (cart.length === 0) {
+        container.innerHTML = '<div class="text-center py-12 bg-purple-50 rounded-lg"><p class="text-5xl mb-3">🛒</p><p class="text-lg text-purple-600 font-medium">Your cart is empty</p><p class="text-sm text-purple-500 mt-1">Add items from the menu to get started</p></div>';
+      } else {
+        cart.forEach(item => {
+          const menuItem = MENU_ITEMS.find(m => m.id === item.id);
+          const image = menuItem ? menuItem.image : "";
+          const row = document.createElement("div");
+          row.className = "slide-up flex items-center gap-4 bg-white rounded-lg border border-purple-200 p-4 shadow-sm";
+          row.innerHTML = `
+            <img src="${image}" alt="${item.name}" class="w-20 h-20 rounded-lg object-cover" />
+            <div class="flex-1">
+              <p class="text-base font-bold text-purple-900">${item.name}</p>
+              <p class="text-sm text-purple-600">${item.vendor}</p>
+              <p class="text-sm text-purple-500 mt-1">₹${item.price} each</p>
+            </div>
+            <div class="flex items-center gap-3">
+              <button type="button" class="focus-outline w-8 h-8 flex items-center justify-center rounded-lg border border-purple-300 text-purple-700 font-bold hover:bg-purple-100 smooth-transition" data-qty-dec="${item.id}">-</button>
+              <span class="min-w-[2rem] text-center text-purple-900 font-bold text-lg">${item.quantity}</span>
+              <button type="button" class="focus-outline w-8 h-8 flex items-center justify-center rounded-lg border border-purple-300 text-purple-700 font-bold hover:bg-purple-100 smooth-transition" data-qty-inc="${item.id}">+</button>
+            </div>
+            <div class="flex flex-col items-end">
+              <span class="text-lg font-bold text-purple-900">₹${item.price * item.quantity}</span>
+              <button type="button" class="focus-outline mt-2 text-sm text-pink-500 hover:text-pink-700 font-medium hover:underline smooth-transition" data-remove="${item.id}">Remove</button>
+            </div>
+          `;
+          container.appendChild(row);
+        });
+      }
+
+      const total = cart.reduce((acc, cur) => acc + cur.price * cur.quantity, 0);
+      document.getElementById("cartTotal").textContent = total.toString();
+      updateCartCount();
+    }
+
+    function handleCartInteractions() {
+      document.getElementById("cartItems").addEventListener("click", e => {
+        const dec = e.target.closest("[data-qty-dec]");
+        const inc = e.target.closest("[data-qty-inc]");
+        const rem = e.target.closest("[data-remove]");
+        if (dec) {
+          const id = dec.getAttribute("data-qty-dec");
+          const item = cart.find(i => i.id === id);
+          if (!item) return;
+          if (item.quantity > 1) {
+            item.quantity -= 1;
+          } else {
+            cart = cart.filter(i => i.id !== id);
+          }
+          renderCart();
+        } else if (inc) {
+          const id = inc.getAttribute("data-qty-inc");
+          const item = cart.find(i => i.id === id);
+          if (!item) return;
+          item.quantity += 1;
+          renderCart();
+        } else if (rem) {
+          const id = rem.getAttribute("data-remove");
+          cart = cart.filter(i => i.id !== id);
+          renderCart();
+        }
+      });
+
+      document.getElementById("addressForm").addEventListener("submit", e => e.preventDefault());
+
+      document.getElementById("placeOrderBtn").addEventListener("click", () => {
+        if (cart.length === 0) {
+          showStatus("Your cart is empty.", "error");
+          return;
+        }
+
+        const address = document.getElementById("deliveryAddress").value.trim();
+        const name = document.getElementById("contactName").value.trim();
+        const phone = document.getElementById("contactPhone").value.trim();
+        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+
+        if (!address) {
+          showStatus("Please enter your delivery address.", "error");
+          document.getElementById("deliveryAddress").focus();
+          return;
+        }
+
+        if (!name) {
+          showStatus("Please enter your name.", "error");
+          document.getElementById("contactName").focus();
+          return;
+        }
+
+        if (!phone) {
+          showStatus("Please enter your phone number.", "error");
+          document.getElementById("contactPhone").focus();
+          return;
+        }
+
+        openConfirmOrderModal(address, name, phone, paymentMethod);
+      });
+    }
+
+    // -------- Order Confirmation Modal --------
+    function openConfirmOrderModal(address, name, phone, paymentMethod) {
+      const total = cart.reduce((acc, cur) => acc + cur.price * cur.quantity, 0);
+      
+      const itemsContainer = document.getElementById("confirmOrderItems");
+      itemsContainer.innerHTML = cart.map(item => `
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-purple-700">${item.name} × ${item.quantity}</span>
+          <span class="font-semibold text-purple-900">₹${item.price * item.quantity}</span>
+        </div>
+      `).join('');
+
+      document.getElementById("confirmTotal").textContent = total;
+
+      const addressContainer = document.getElementById("confirmAddress");
+      addressContainer.innerHTML = `
+        <p class="font-semibold mb-1">${name}</p>
+        <p class="mb-1">${address}</p>
+        <p class="text-purple-600">📞 ${phone}</p>
+      `;
+
+      const paymentLabels = {
+        upi: "📱 UPI Payment",
+        cod: "💵 Cash on Delivery",
+        netbanking: "🏦 Net Banking",
+        card: "💳 Credit/Debit Card"
+      };
+
+      const paymentContainer = document.getElementById("confirmPayment");
+      paymentContainer.innerHTML = `
+        <p class="font-semibold">${paymentLabels[paymentMethod] || paymentMethod}</p>
+      `;
+
+      const modal = document.getElementById("confirmOrderModal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+    }
+
+    function closeConfirmOrderModal() {
+      const modal = document.getElementById("confirmOrderModal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+    }
+
+    function initConfirmOrderModal() {
+      document.getElementById("cancelConfirmBtn").addEventListener("click", closeConfirmOrderModal);
+      document.getElementById("closeConfirmModalBtn").addEventListener("click", closeConfirmOrderModal);
+      
+      document.getElementById("confirmOrderModal").addEventListener("click", e => {
+        if (e.target.id === "confirmOrderModal") {
+          closeConfirmOrderModal();
+        }
+      });
+
+      document.getElementById("confirmPlaceOrderBtn").addEventListener("click", () => {
+        const address = document.getElementById("deliveryAddress").value.trim();
+        const name = document.getElementById("contactName").value.trim();
+        const phone = document.getElementById("contactPhone").value.trim();
+        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+        const total = cart.reduce((acc, cur) => acc + cur.price * cur.quantity, 0);
+        const orderId = "ORD-" + String(orders.length + 1).padStart(3, "0");
+        const time = new Date().toLocaleString();
+        const orderItems = cart.map(i => ({ ...i }));
+        
+        const paymentLabels = {
+          upi: "📱 UPI Payment",
+          cod: "💵 Cash on Delivery",
+          netbanking: "🏦 Net Banking",
+          card: "💳 Credit/Debit Card"
+        };
+        
+        orders.unshift({ 
+          id: orderId, 
+          items: orderItems, 
+          total, 
+          time,
+          address,
+          name,
+          phone,
+          paymentMethod: paymentLabels[paymentMethod] || paymentMethod
+        });
+        
+        cart = [];
+        document.getElementById("deliveryAddress").value = "";
+        document.getElementById("contactName").value = "";
+        document.getElementById("contactPhone").value = "";
+        
+        renderCart();
+        renderOrders();
+        closeConfirmOrderModal();
+        setActiveSection("orders");
+        showStatus("🎉 Order placed successfully! You can now review your items.");
+      });
+    }
+
+    // -------- Orders --------
+    function renderOrders() {
+      const container = document.getElementById("ordersList");
+      container.innerHTML = "";
+      if (orders.length === 0) {
+        container.innerHTML = '<div class="text-center py-12 bg-purple-50 rounded-lg"><p class="text-5xl mb-3">📦</p><p class="text-lg text-purple-600 font-medium">No orders yet</p><p class="text-sm text-purple-500 mt-1">Place your first order to see it here</p></div>';
+        return;
+      }
+      orders.forEach(order => {
+        const card = document.createElement("article");
+        card.className = "slide-up bg-white rounded-lg border border-purple-200 p-5 shadow-sm";
+        
+        const reviewableItems = order.items.map(i => {
+          const reviewed = reviews.some(r => r.itemId === i.id && r.itemName === i.name);
+          return { ...i, reviewed };
+        });
+
+        const itemsList = order.items.map(i => `
+          <div class="flex items-center justify-between py-2 border-b border-purple-100 last:border-0">
+            <div>
+              <p class="text-sm font-medium text-purple-900">${i.name}</p>
+              <p class="text-xs text-purple-500">${i.vendor} • Qty: ${i.quantity}</p>
+            </div>
+            <p class="text-sm font-semibold text-purple-900">₹${i.price * i.quantity}</p>
+          </div>
+        `).join('');
+
+        const addressSection = order.address ? `
+          <div class="bg-purple-50 rounded-lg p-3 mb-4">
+            <p class="text-xs font-bold text-purple-900 mb-2">📍 Delivery Address</p>
+            <p class="text-sm font-semibold text-purple-700">${order.name}</p>
+            <p class="text-sm text-purple-600">${order.address}</p>
+            <p class="text-sm text-purple-600">📞 ${order.phone}</p>
+            ${order.paymentMethod ? `<p class="text-sm text-purple-600 mt-2 font-semibold">${order.paymentMethod}</p>` : ''}
+          </div>
+        ` : '';
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <p class="text-lg font-bold text-purple-900">Order ${order.id}</p>
+              <p class="text-sm text-purple-500">${order.time}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-sm text-purple-600">Total</p>
+              <p class="text-xl font-bold text-purple-900">₹${order.total}</p>
+            </div>
+          </div>
+          <div class="bg-purple-50 rounded-lg p-3 mb-4">
+            ${itemsList}
+          </div>
+          ${addressSection}
+          <div class="flex flex-wrap gap-2">
+            ${reviewableItems.map(i => {
+              if (i.reviewed) {
+                return `<span class="text-xs px-3 py-1.5 rounded-full bg-green-100 text-green-700 font-medium">✓ Reviewed: ${i.name}</span>`;
+              }
+              return `<button type="button" class="focus-outline text-xs px-3 py-1.5 rounded-full border border-purple-300 bg-white text-purple-700 font-medium hover:bg-purple-50 smooth-transition" data-review-item="${i.id}" data-review-name="${i.name}">⭐ Review ${i.name}</button>`;
+            }).join("")}
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      container.addEventListener("click", e => {
+        const btn = e.target.closest("[data-review-item]");
+        if (!btn) return;
+        const itemId = btn.getAttribute("data-review-item");
+        const itemName = btn.getAttribute("data-review-name") || "";
+        openReviewModal(itemId, itemName);
+      }, { once: true });
+    }
+
+    // -------- Reviews --------
+    function renderReviews() {
+      const container = document.getElementById("reviewsList");
+      container.innerHTML = "";
+      if (reviews.length === 0) {
+        container.innerHTML = '<div class="text-center py-12 bg-purple-50 rounded-lg"><p class="text-5xl mb-3">⭐</p><p class="text-lg text-purple-600 font-medium">No reviews yet</p><p class="text-sm text-purple-500 mt-1">Order something delicious and share your experience!</p></div>';
+        return;
+      }
+      reviews.forEach(r => {
+        const card = document.createElement("article");
+        card.className = "bg-white rounded-lg border border-purple-200 p-5 shadow-sm";
+        const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
+        card.innerHTML = `
+          <div class="flex items-start justify-between mb-3">
+            <div>
+              <p class="text-lg font-bold text-purple-900">${r.itemName}</p>
+              <p class="text-sm text-purple-500">${r.time}</p>
+            </div>
+            <span class="text-2xl text-yellow-500">${stars}</span>
+          </div>
+          <p class="text-sm text-purple-700 italic">"${r.text || "No comment provided"}"</p>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // -------- Review Modal --------
+    function openReviewModal(itemId, itemName) {
+      reviewContext = { itemId, itemName };
+      currentRating = 0;
+      document.getElementById("reviewItemName").textContent = itemName;
+      document.getElementById("reviewText").value = "";
+      updateStarDisplay();
+      const modal = document.getElementById("reviewModal");
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      document.getElementById("reviewText").focus();
+    }
+
+    function closeReviewModal() {
+      const modal = document.getElementById("reviewModal");
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+      reviewContext = { itemId: null, itemName: "" };
+      currentRating = 0;
+    }
+
+    function updateStarDisplay() {
+      document.querySelectorAll("#reviewModal .star").forEach(star => {
+        const r = Number(star.getAttribute("data-rating"));
+        if (r <= currentRating) {
+          star.classList.add("active");
+        } else {
+          star.classList.remove("active");
+        }
+      });
+    }
+
+    function initReviewModal() {
+      document.querySelectorAll("#reviewModal .star").forEach(star => {
+        star.addEventListener("click", () => {
+          currentRating = Number(star.getAttribute("data-rating"));
+          updateStarDisplay();
+        });
+      });
+
+      document.getElementById("cancelReviewBtn").addEventListener("click", closeReviewModal);
+      document.getElementById("closeReviewModalBtn").addEventListener("click", closeReviewModal);
+      document.getElementById("reviewModal").addEventListener("click", e => {
+        if (e.target.id === "reviewModal") {
+          closeReviewModal();
+        }
+      });
+
+      document.getElementById("submitReviewBtn").addEventListener("click", () => {
+        if (!reviewContext.itemId) return;
+        if (currentRating === 0) {
+          showStatus("Please select a rating before submitting.", "error");
+          return;
+        }
+        const text = document.getElementById("reviewText").value.trim();
+        const time = new Date().toLocaleString();
+        reviews.unshift({
+          id: "REV-" + String(reviews.length + 1).padStart(3, "0"),
+          itemId: reviewContext.itemId,
+          itemName: reviewContext.itemName,
+          rating: currentRating,
+          text,
+          time
+        });
+        renderReviews();
+        renderOrders();
+        closeReviewModal();
+        showStatus("✨ Review submitted successfully! Thank you for your feedback.");
+      });
+    }
+
+    // -------- Logout --------
+    function initLogout() {
+      document.getElementById("logoutBtn").addEventListener("click", () => {
+        showStatus("This is a demo — logout is not connected.");
+      });
+    }
+
+    // -------- Tab Navigation --------
+    function initTabs() {
+      document.querySelectorAll(".tab-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const section = btn.getAttribute("data-section");
+          if (section) setActiveSection(section);
+        });
+      });
+      
+      document.querySelector(".cart-header-btn").addEventListener("click", () => {
+        setActiveSection("cart");
+      });
+      
+      document.getElementById("logoBtn").addEventListener("click", () => {
+        setActiveSection("browse");
+      });
+    }
+
+    // -------- Init --------
+    document.addEventListener("DOMContentLoaded", () => {
+      renderMenu();
+      renderCart();
+      renderOrders();
+      renderReviews();
+      initTabs();
+      handleBrowseInteractions();
+      handleCartInteractions();
+      handleQuickFilters();
+      initReviewModal();
+      initConfirmOrderModal();
+      initLogout();
+      setActiveSection("browse");
+    });
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a1a5c990351c0e2',t:'MTc2MzY2NzAyNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
